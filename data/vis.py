@@ -26,7 +26,19 @@ def obj_transform(file_name):
                 v.append([float(strs[1]), float(strs[2]), float(strs[3])])
     return np.array(v)
 
-obj_array = obj_transform('test/AF2.obj')
+
+def analysis(obj):
+    temp = 0
+    ana=[]
+    for idx, data in enumerate(obj):
+        if temp > data[2]:
+            # print(idx)
+            ana.append(idx)
+        temp = data[2]
+    print(len(ana))
+
+obj_array = obj_transform('test/AF1.obj')
+analysis(obj_array)
 print(len(obj_array))
 fig = plt.figure()
 ax = plt.axes(projection='3d')

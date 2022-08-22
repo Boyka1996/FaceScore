@@ -8,6 +8,7 @@
 @Project    : FaceScore
 @Description:
 """
+import torch
 import torch.utils.data as data
 import numpy as np
 import os
@@ -36,18 +37,20 @@ class FaceDataset(data.Dataset):
         return names, labels
 
     def __getitem__(self, index):
-        obj, target = self.__obj_transform__(self.data[index]), self.target[index]
+        obj, target = self.__obj_transform__(self.data[index]), np.array([self.target[index]])
         if self.data_transform:
             obj = self.data_transform(obj)
+            obj = obj.squeeze().transpose(0, 1)
         if self.target_transform:
-            target = self.target_transform(target)
+            target = torch.Tensor(target)
+            # target = self.target_transform(target)
         return obj, target
 
     def __len__(self):
         return len(self.target)
 
     def __obj_transform__(self, file_name):
-        obj_file_path = os.path.join(self.obj_path, file_name)
+        obj_file_path = os.path.join(self.obj_path, file_name).replace('.jpg', '.obj')
         if not os.path.exists(obj_file_path):
             return
         with open(obj_file_path) as file:
@@ -59,4 +62,4 @@ class FaceDataset(data.Dataset):
                 strs = line.split(" ")
                 if strs[0] == "v":
                     v.append([float(strs[1]), float(strs[2]), float(strs[3])])
-        return np.array(v)
+        return np.array(v)[0:-1:2].astype(np.float32)
