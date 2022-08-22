@@ -20,6 +20,7 @@ class FaceDataset(data.Dataset):
         self.data_transform = data_transform
         self.target_transform = target_transform
         self.data, self.target = self.__build_dataset__()
+        self.length = self.__len__()
 
     def __build_dataset__(self):
         names = []

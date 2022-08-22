@@ -8,7 +8,7 @@
 @Project    : FaceScore
 @Description:
 """
-#神经网络
+# 神经网络
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,40 +16,38 @@ import torch.optim as optim
 from data import FaceDataset
 import torchvision
 import torchvision.transforms as transforms
-import torch.utils.data as Data
+import torch.utils.data as data
 from model import Net
+
 criterion = nn.MSELoss()
 
 net = Net()
 
-optimizer = optim.Adam(net.parameters(), lr = 0.001)
+optimizer = optim.Adam(net.parameters(), lr=0.001)
 transform = transforms.Compose(
     [transforms.ToTensor(),
-     transforms.Normalize((0.5,0.5,0.5),(0.5,0.5,0.5))]
+     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
 )
-train_set=FaceDataset(obj_path='',label_path='')
-test_set=FaceDataset(obj_path='',label_path='')
+train_set = FaceDataset(obj_path='', label_path='/home/chase/Boyka/SCUT-FBP5500_v2/train_test_files/split64/train.txt')
+test_set = FaceDataset(obj_path='', label_path='/home/chase/Boyka/SCUT-FBP5500_v2/train_test_files/split64/test.txt')
 
+train_loader = data.DataLoader(dataset=train_set, batch_size=8, shuffle=True)
+test_loader = data.DataLoader(dataset=test_set, batch_size=8, shuffle=False)
 
-train_loader = Data.DataLoader(dataset = train_set, batch_size = 8, shuffle = True)
-test_loader = Data.DataLoader(dataset = test_set, batch_size = 8, shuffle = False)
+num_epochs = 1
 
-num_peochs = 1
-
-
-#开始训练：num_peochs是训练周期数
-for epoch in range(num_peochs):
+for epoch in range(num_epochs):
     correct = 0
-    total = 0
-    run_loss = 0.0
+    run_loss = 0
+    total_loss = 0.0
     for i, data in enumerate(train_loader):
-        input, label = data
+        obj, label = data
         optimizer.zero_grad()
-        outputs = net(input)
-        lossValue = criterion(outputs, label)
-        lossValue.backward()
+        outputs = net(obj)
+        loss = criterion(outputs, label)
+        loss.backward()
         optimizer.step()
-        run_loss += lossValue.item()
+        run_loss += loss.item()
 
         num = 20
 
@@ -58,10 +56,9 @@ for epoch in range(num_peochs):
             run_loss = 0
 
         _, pred = outputs.max(1)
-        correct += (pred == label).sum().item()
-        total += label.size()[0]
 
-    print("训练集准确率：", correct / total)
+        total_loss += loss.item()
 
-#打印训练结束标识符
+    print("训练集误差：", total_loss / train_set.length)
+
 print("finished training!")
