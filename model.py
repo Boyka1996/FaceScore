@@ -41,7 +41,7 @@ class STN3d(nn.Module):
         self.bn5 = nn.BatchNorm1d(256)
 
     def forward(self, x):
-        print(x.shape)
+        # print(x.shape)
         batchsize = x.size()[0] # shape (batch_size,3,point_nums)
         x = F.relu(self.bn1(self.conv1(x))) # shape (batch_size,64,point_nums)
         x = F.relu(self.bn2(self.conv2(x))) # shape (batch_size,128,point_nums)
