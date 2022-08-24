@@ -62,4 +62,4 @@ class FaceDataset(data.Dataset):
                 strs = line.split(" ")
                 if strs[0] == "v":
                     v.append([float(strs[1]), float(strs[2]), float(strs[3])])
-        return np.array(v)[0:-1:2].astype(np.float32)
+        return np.array(v)[0:-1:4].astype(np.float32)
