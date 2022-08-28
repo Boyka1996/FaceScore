@@ -21,7 +21,7 @@ import torch.utils.data
 from torch.autograd import Variable
 import numpy as np
 import torch.nn.functional as F
-
+from tensorboardX import SummaryWriter
 
 # T-Net: is a pointnet itself.获取3x3的变换矩阵，校正点云姿态；效果一般，后续的改进并没有再加入这部分
 # 经过全连接层映射到9个数据，最后调整为3x3矩阵
@@ -188,27 +188,45 @@ class PointNetReg(nn.Module):
         # return F.log_softmax(x, dim=1)  # log_softmax分类，解决softmax在计算e的次方时容易造成的上溢出和下溢出问题
 #测试用的函数
 if __name__ == '__main__':
-    sim_data = Variable(torch.rand(32,3,2500))
-    trans = STN3d()
-    out = trans(sim_data)
-    print('stn', out.size())
+    device=torch.device('cpu')
+    # device=torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+    sim_data = torch.rand(32, 3, 20000)
+    print(sim_data.shape)
+    # sim_data=sim_data.cuda(1)
+    sim_data=sim_data.to(device)
+    model = STN3d()
+    # trans=trans.cuda(1)
+    model=model.to(device)
+    start_time=time.time()
+    # out = model(sim_data)
+    # print(out)
+    print(time.time()-start_time)
+    # print('stn', out.size())
+    # print('loss', feature_transform_regularizer(out))
 
-    sim_data_64d = Variable(torch.rand(32, 64, 2500))
-    trans = STNkd(k=64)
-    out = trans(sim_data_64d)
-    print('stn64d', out.size())
-
-    pointfeat = PointNetfeat(global_feat=True)
-    out, _, _ = pointfeat(sim_data)
-    print('global feat', out.size())
-
-    pointfeat = PointNetfeat(global_feat=False)
-    out, _, _ = pointfeat(sim_data)
-    print('point feat', out.size())
-
-    cls = PointNetReg()
-    out = cls(sim_data)
-    print('class', out.size())
+    with SummaryWriter(logdir="PointNet") as w:
+        w.add_graph(model, sim_data)
+    # sim_data = Variable(torch.rand(32,3,2500))
+    # trans = STN3d()
+    # out = trans(sim_data)
+    # print('stn', out.size())
+    #
+    # sim_data_64d = Variable(torch.rand(32, 64, 2500))
+    # trans = STNkd(k=64)
+    # out = trans(sim_data_64d)
+    # print('stn64d', out.size())
+    #
+    # pointfeat = PointNetfeat(global_feat=True)
+    # out, _, _ = pointfeat(sim_data)
+    # print('global feat', out.size())
+    #
+    # pointfeat = PointNetfeat(global_feat=False)
+    # out, _, _ = pointfeat(sim_data)
+    # print('point feat', out.size())
+    #
+    # cls = PointNetReg()
+    # out = cls(sim_data)
+    # print('class', out.size())
 
 #
 # if __name__ == '__main__':
