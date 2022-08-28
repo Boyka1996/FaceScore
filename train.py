@@ -65,11 +65,8 @@ logger.addHandler(file_handler)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 criterion = nn.MSELoss()
-# net = STN3d()
-net = PointNetReg()
-net = net.to(device)
 
-optimizer = optim.Adam(net.parameters(), lr=0.001)
+
 transform = transforms.Compose(
     [transforms.ToTensor()
      ]
@@ -81,12 +78,15 @@ test_set = FaceDataset(obj_path='/home/chase/Boyka/SCUT-FBP5500_v2/images',
                        label_path='/home/chase/Boyka/SCUT-FBP5500_v2/train_test_files/split64/test.txt',
                        data_transform=transform, target_transform=transform)
 
-train_loader = data.DataLoader(dataset=train_set, batch_size=16, shuffle=True)
-test_loader = data.DataLoader(dataset=test_set, batch_size=16, shuffle=False)
+train_loader = data.DataLoader(dataset=train_set, batch_size=16, num_workers=8, shuffle=True)
+test_loader = data.DataLoader(dataset=test_set, batch_size=16, num_workers=8, shuffle=False)
 
-num_epochs = 30
+num_epochs = 150
 num = 20
-
+# net = STN3d()
+net = PointNetReg()
+net.to(device)
+optimizer = optim.Adam(net.parameters(), lr=0.0001)
 for epoch in range(num_epochs):
     run_loss, total_loss = 0.0, 0.0
     run_ae, total_ae = 0.0, 0.0
@@ -119,7 +119,6 @@ for epoch in range(num_epochs):
     net.eval()
     for i, data in enumerate(test_loader):
         obj, label = data
-
         obj, label = obj.to(device), label.to(device)
         outputs = net(obj)
         gt = np.hstack((gt, label.cpu().detach().numpy().squeeze()))
