@@ -1,38 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-@Time       : 2022/8/21 11:21
+@Time       : 2022/9/2 21:56
 @Author     : Boyka
 @Contact    : zhw@s.upc.edu.cn
 @File       : train.py
 @Project    : FaceScore
 @Description:
 """
-# 神经网络
+import torch.nn as nn
+import math
+import pickle
+import torch
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from data import FaceDataset
 import logging
 import os
-import torchvision.transforms as transforms
-import torch.utils.data as data
-from model import STN3d
-from PointNet import PointNetReg
 import datetime
-
-
-def pc(x, y):
-    n = len(x)
-    sum_xy = np.sum(np.sum(x * y))
-    sum_x = np.sum(np.sum(x))
-    sum_y = np.sum(np.sum(y))
-    sum_x2 = np.sum(np.sum(x * x))
-    sum_y2 = np.sum(np.sum(y * y))
-    pc = (n * sum_xy - sum_x * sum_y) / np.sqrt((n * sum_x2 - sum_x * sum_x) * (n * sum_y2 - sum_y * sum_y))
-    return pc
-
+from FaceData import FaceDataset
+import torchvision
+import torch.nn.functional as F
+import torch.optim as optim
+import torch.utils.data as data
+from torchvision import datasets, transforms
+from torch.autograd import Variable
+from torchvision import models
+import matplotlib.pyplot as plt
+from PIL import Image
+from torchvision import models
 
 logdir = './logs'
 log_file_name = 'PointNet-%s' % (datetime.datetime.now().strftime("%Y-%m-%d-%H%M-%S"))
@@ -45,12 +40,10 @@ formatter = logging.Formatter(fmt='%(asctime)s %(levelname)-8s %(message)s', dat
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 
-# 终端handler
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(fmt=formatter)
 
-# 没有给handler指定日志级别，将使用logger的级别
 file_handler = logging.FileHandler(filename=log_path, mode='w')
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(fmt=formatter)
@@ -59,31 +52,38 @@ logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 # ******日志相关部分结束******
 
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
-
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
-criterion = nn.MSELoss()
-
-transform = transforms.Compose(
-    [transforms.ToTensor()
-     ]
-)
-train_set = FaceDataset(obj_path='/home/chase/Boyka/SCUT-FBP5500_v2/images',
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+model = models.resnet18(pretrained=True)
+# 修改全连接层的输出
+num_ftrs = model.fc.in_features
+# 十分类，将输出层修改成10
+model.fc = nn.Linear(num_ftrs, 1)
+batch_size = 16
+num_workers=8
+train_transforms = transforms.Compose([
+    transforms.Resize((224, 224)),  # 对图片尺寸做一个缩放切割
+    transforms.RandomHorizontalFlip(),  # 水平翻转
+    transforms.ToTensor(),  # 转化为张量
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # 进行归一化
+])
+test_transforms = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # 进行归一化
+])
+train_set = FaceDataset(img_path='/home/chase/Boyka/SCUT-FBP5500_v2/Images',
                         label_path='/home/chase/Boyka/SCUT-FBP5500_v2/train_test_files/split64/train.txt',
-                        data_transform=transform, target_transform=transform)
-test_set = FaceDataset(obj_path='/home/chase/Boyka/SCUT-FBP5500_v2/images',
+                        transform=train_transforms)
+test_set = FaceDataset(img_path='/home/chase/Boyka/SCUT-FBP5500_v2/Images',
                        label_path='/home/chase/Boyka/SCUT-FBP5500_v2/train_test_files/split64/test.txt',
-                       data_transform=transform, target_transform=transform)
+                       transform=test_transforms)
+train_loader = data.DataLoader(dataset=train_set, batch_size=batch_size, num_workers=num_workers, shuffle=True)
+test_loader = data.DataLoader(dataset=test_set, batch_size=batch_size, num_workers=num_workers, shuffle=False)
 
-train_loader = data.DataLoader(dataset=train_set, batch_size=16, num_workers=8, shuffle=True)
-test_loader = data.DataLoader(dataset=test_set, batch_size=16, num_workers=8, shuffle=False)
-
-num_epochs = 150
+num_epochs = 30
 num = 20
-# net = STN3d()
-net = PointNetReg()
+criterion = nn.MSELoss()
+net = model
 net.to(device)
 optimizer = optim.Adam(net.parameters(), lr=0.0001)
 for epoch in range(num_epochs):
