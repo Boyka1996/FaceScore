@@ -59,7 +59,7 @@ num_ftrs = model.fc.in_features
 # 十分类，将输出层修改成10
 model.fc = nn.Linear(num_ftrs, 1)
 batch_size = 16
-num_workers=8
+num_workers = 8
 train_transforms = transforms.Compose([
     transforms.Resize((224, 224)),  # 对图片尺寸做一个缩放切割
     transforms.RandomHorizontalFlip(),  # 水平翻转
