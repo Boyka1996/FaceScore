@@ -13,26 +13,14 @@ from PIL import Image
 from torch.utils.data import Dataset
 import numpy as np
 import os
-import csv
 
 
 class FaceDataset(Dataset):
-    def __init__(self, img_path, label_path, transform):
+    def __init__(self, img_path, data, label, transform):
         self.img_path = img_path
-        self.label_path = label_path
         self.transform = transform
-        self.data, self.label = self.__build_dataset__()
+        self.data, self.label = data, label
         self.length = self.__len__()
-
-    def __build_dataset__(self):
-        names = []
-        labels = []
-        with open(self.label_path) as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                names.append(row['id'])
-                labels.append(row['UV'])
-        return names, labels
 
     def __len__(self):
         return len(self.label)
@@ -42,5 +30,5 @@ class FaceDataset(Dataset):
         label = self.label[index]
         data = Image.open(img_path)
         data = self.transform(data)
-        label = torch.tensor([label])
+        label = torch.from_numpy(np.ndarray(label))
         return data, label

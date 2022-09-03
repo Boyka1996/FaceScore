@@ -42,5 +42,5 @@ class FaceDataset(Dataset):
         label = self.label[index]
         data = Image.open(img_path)
         data = self.transform(data)
-        label = torch.tensor([label])
+        label = torch.from_numpy(np.ndarray(label))
         return data, label
